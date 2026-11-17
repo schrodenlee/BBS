@@ -1,0 +1,1475 @@
+                   <!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berg Balance Scale (BBS) Clinical Assessment & Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for Visual Charting -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                   fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        clinical: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            200: '#bae0fd',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            800: '#0c4a6e',
+                            900: '#082f49',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Custom radio selection styling */
+        .option-card {
+            transition: all 0.15s ease-in-out;
+        }
+        .option-card:hover {
+            border-color: #38bdf8;
+            background-color: #f0f9ff;
+        }
+        .option-card.selected {
+            border-color: #0284c7;
+            background-color: #e0f2fe;
+            box-shadow: 0 0 0 1px #0284c7;
+        }
+
+        /* Print optimization */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                font-size: 11pt;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .print-break-inside-avoid {
+                break-inside: avoid;
+            }
+            .shadow-sm, .shadow-md, .shadow-lg {
+                box-shadow: none !important;
+            }
+            .border {
+                border-color: #cbd5e1 !important;
+            }
+            main {
+                display: block !important;
+            }
+            .assessment-item-card {
+                margin-bottom: 12px !important;
+                padding: 12px !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-clinical-800 text-white shadow-md sticky top-0 z-30 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-clinical-500 p-2.5 rounded-xl shadow-inner flex items-center justify-center">
+                    <i class="fa-solid fa-scale-balanced text-xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight">Berg Balance Scale (BBS)</h1>
+                    <p class="text-xs text-clinical-200 hidden sm:block">Standardized 14-Item Objective Balance Assessment & Progress Charting</p>
+                </div>
+            </div>
+
+            <!-- Live Quick Status Pill & Actions -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <div class="bg-clinical-900/80 border border-clinical-600 px-3 py-1.5 rounded-xl flex items-center space-x-3">
+                    <div class="text-right">
+                        <span class="text-[10px] uppercase tracking-wider text-clinical-200 block">Total Score</span>
+                        <span id="navScoreDisplay" class="text-base sm:text-lg font-bold text-white">0 / 56</span>
+                    </div>
+                    <div class="h-6 w-px bg-clinical-700"></div>
+                    <div class="text-right">
+                        <span class="text-[10px] uppercase tracking-wider text-clinical-200 block">Completed</span>
+                        <span id="navProgressDisplay" class="text-sm font-semibold text-sky-300">0 / 14</span>
+                    </div>
+                </div>
+
+                <button onclick="openEquipmentModal()" class="bg-clinical-700 hover:bg-clinical-600 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition flex items-center gap-1.5 shadow-sm" title="Equipment Checklist">
+                    <i class="fa-solid fa-toolbox"></i>
+                    <span class="hidden md:inline">Equipment</span>
+                </button>
+
+                <button onclick="openResetModal()" class="bg-rose-600/90 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition flex items-center gap-1.5 shadow-sm" title="Reset Assessment">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span class="hidden md:inline">Reset</span>
+                </button>
+            </div>
+        </div>
+        <!-- Top Progress Bar -->
+        <div class="w-full bg-clinical-900 h-1.5">
+            <div id="topProgressBar" class="bg-emerald-400 h-1.5 transition-all duration-300" style="width: 0%"></div>
+        </div>
+    </header>
+
+    <!-- Print-Only Clinical Report Header -->
+    <div class="hidden print-only max-w-7xl mx-auto px-6 pt-4 pb-6 border-b-2 border-slate-800 mb-6">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Berg Balance Scale (BBS) Clinical Report</h1>
+                <p class="text-sm text-slate-600">Standardized 14-Item Objective Functional Balance Assessment</p>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-bold text-slate-900" id="printTotalScore">0 / 56</div>
+                <div class="text-xs font-semibold uppercase tracking-wide text-slate-600" id="printRiskCategory">Not Completed</div>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-200 text-sm">
+            <div><strong>Patient Name / ID:</strong> <span id="printPatientName">N/A</span></div>
+            <div><strong>Assessment Date:</strong> <span id="printAssessmentDate">N/A</span></div>
+            <div><strong>Clinician:</strong> <span id="printClinicianName">N/A</span></div>
+        </div>
+        <div class="mt-2 text-sm">
+            <strong>Clinical Notes / Assistive Device:</strong> <span id="printClinicalNotes">None</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+        
+        <!-- Patient & Assessment Metadata Card -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6 no-print">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-user-injured text-clinical-600 text-lg"></i>
+                    <h2 class="text-base font-bold text-slate-800">Patient & Assessment Information</h2>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-500">Quick Jumping:</span>
+                    <select id="quickJumpSelect" onchange="jumpToItem(this.value)" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-clinical-500">
+                        <option value="">Jump to Item (1-14)...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label for="patientName" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Patient Name or ID</label>
+                    <div class="relative">
+                        <i class="fa-regular fa-id-card absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="patientName" placeholder="e.g., Jane Doe / #4829" oninput="syncMetadata()" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-clinical-500 transition">
+                    </div>
+                </div>
+                <div>
+                    <label for="assessmentDate" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Date of Assessment</label>
+                    <div class="relative">
+                        <i class="fa-regular fa-calendar absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+                        <input type="date" id="assessmentDate" oninput="syncMetadata()" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-clinical-500 transition">
+                    </div>
+                </div>
+                <div>
+                    <label for="clinicianName" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Clinician Name / Title</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user-doctor absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="clinicianName" placeholder="e.g., A. Smith, PT, DPT" oninput="syncMetadata()" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-clinical-500 transition">
+                    </div>
+                </div>
+                <div>
+                    <label for="clinicalNotes" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Setting / Notes (Optional)</label>
+                    <div class="relative">
+                        <i class="fa-regular fa-comment-dots absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="clinicalNotes" placeholder="e.g., Initial Eval, Outpatient" oninput="syncMetadata()" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-clinical-500 transition">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Two Column Layout: 14 Items on Left, Sticky Summary & Charts on Right -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Left Column: 14 Berg Balance Scale Items -->
+            <div class="lg:col-span-7 xl:col-span-8 space-y-5">
+                
+                <!-- Filter / View Bar -->
+                <div class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-2 no-print">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-semibold text-slate-500 uppercase px-2">Filter Items:</span>
+                        <button onclick="setItemFilter('all')" id="filterAllBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-clinical-600 text-white transition">All Items (14)</button>
+                        <button onclick="setItemFilter('unanswered')" id="filterUnansweredBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Unscored Only</button>
+                    </div>
+                    <div class="text-xs text-slate-500 pr-2">
+                        <i class="fa-solid fa-circle-info text-clinical-500 mr-1"></i>
+                        Record the <strong>lowest response category</strong> that applies for each item.
+                    </div>
+                </div>
+
+                <!-- Container for the 14 dynamically rendered BBS items -->
+                <div id="bbsItemsContainer" class="space-y-5"></div>
+
+            </div>
+
+            <!-- Right Column: Sticky Real-Time Summary, Risk Interpretation, Visual Charting & History -->
+            <div class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-20 space-y-6 no-print">
+                
+                <!-- Real-Time Score & Clinical Risk Card -->
+                <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-clinical-800 to-clinical-600 p-5 text-white">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs uppercase tracking-wider text-clinical-200 font-semibold">Real-Time BBS Score</span>
+                                <div class="flex items-baseline space-x-2 mt-1">
+                                    <span id="summaryTotalScore" class="text-4xl font-extrabold tracking-tight">0</span>
+                                    <span class="text-lg text-clinical-200 font-medium">/ 56 pts</span>
+                                    <span id="summaryPercentage" class="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded-full font-semibold">0%</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-clinical-200 block">Items Scored</span>
+                                <span id="summaryCompletionBadge" class="inline-block mt-1 px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-300/40 text-amber-200 text-xs font-bold">
+                                    0 of 14
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Score Meter Gauge -->
+                        <div class="mt-4">
+                            <div class="flex justify-between text-[10px] text-clinical-100 font-medium mb-1">
+                                <span>0 (High Risk)</span>
+                                <span>20</span>
+                                <span>40</span>
+                                <span>45 (Cutoff)</span>
+                                <span>56 (Independent)</span>
+                            </div>
+                            <div class="w-full h-3 bg-slate-900/40 rounded-full overflow-hidden p-0.5">
+                                <div id="scoreGaugeBar" class="h-full rounded-full bg-emerald-400 transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clinical Interpretation Body -->
+                    <div class="p-5 space-y-4">
+                        <div>
+                            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Clinical Fall Risk Interpretation</div>
+                            <div id="riskInterpretationBox" class="p-3.5 rounded-xl border bg-slate-50 border-slate-200">
+                                <div class="flex items-center space-x-2.5">
+                                    <i id="riskIcon" class="fa-solid fa-hourglass-half text-slate-500 text-lg"></i>
+                                    <div>
+                                        <h3 id="riskTitle" class="font-bold text-sm text-slate-800">Awaiting Item Scores</h3>
+                                        <p id="riskDescription" class="text-xs text-slate-600 mt-0.5">Select scores for the 14 items on the left to calculate fall risk and functional mobility level.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- < 45 Multiple Falls Cutoff Alert -->
+                        <div id="cutoffAlertBox" class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2.5">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5"></i>
+                            <div>
+                                <strong>Clinical Cutoff Note (&lt; 45 / 56):</strong> Patients scoring below 45 points are at an established increased risk of falling and multiple falls.
+                            </div>
+                        </div>
+
+                        <!-- Reference Legend -->
+                        <div class="border-t border-slate-100 pt-3">
+                            <div class="text-xs font-semibold text-slate-500 mb-2">Standard BBS Interpretation Scale:</div>
+                            <div class="space-y-1.5 text-xs">
+                                <div class="flex items-center justify-between p-1.5 rounded-lg bg-emerald-50/70 text-emerald-900 border border-emerald-200/60">
+                                    <span class="font-semibold"><i class="fa-solid fa-circle text-[8px] text-emerald-500 mr-1.5"></i>41 – 56 points</span>
+                                    <span>Low Fall Risk (Independent)</span>
+                                </div>
+                                <div class="flex items-center justify-between p-1.5 rounded-lg bg-amber-50/70 text-amber-900 border border-amber-200/60">
+                                    <span class="font-semibold"><i class="fa-solid fa-circle text-[8px] text-amber-500 mr-1.5"></i>21 – 40 points</span>
+                                    <span>Medium Risk (Walking w/ Assist)</span>
+                                </div>
+                                <div class="flex items-center justify-between p-1.5 rounded-lg bg-rose-50/70 text-rose-900 border border-rose-200/60">
+                                    <span class="font-semibold"><i class="fa-solid fa-circle text-[8px] text-rose-500 mr-1.5"></i>0 – 20 points</span>
+                                    <span>High Fall Risk (Wheelchair Bound)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="pt-2 grid grid-cols-2 gap-2.5">
+                            <button onclick="saveAssessmentToHistory()" class="col-span-2 bg-clinical-600 hover:bg-clinical-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm shadow-sm transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                <span>Save Assessment to History</span>
+                            </button>
+                            <button onclick="copyClinicalSummary()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-xl text-xs transition flex items-center justify-center space-x-1.5">
+                                <i class="fa-regular fa-copy"></i>
+                                <span>Copy Note</span>
+                            </button>
+                            <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-xl text-xs transition flex items-center justify-center space-x-1.5">
+                                <i class="fa-solid fa-print"></i>
+                                <span>Print / PDF</span>
+                            </button>
+                            <button onclick="exportCurrentCSV()" class="col-span-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-xl text-xs transition flex items-center justify-center space-x-1.5">
+                                <i class="fa-solid fa-file-csv text-emerald-600"></i>
+                                <span>Export Assessment & History (CSV)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Charting Card (Item Profile & History Trend) -->
+                <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-clinical-600"></i>
+                            <span>Visual Balance Profile</span>
+                        </h3>
+                        <div class="inline-flex rounded-lg bg-slate-100 p-0.5 text-xs">
+                            <button onclick="switchChartType('radar')" id="btnChartRadar" class="px-2.5 py-1 rounded-md font-semibold bg-white text-clinical-700 shadow-sm transition">Radar</button>
+                            <button onclick="switchChartType('bar')" id="btnChartBar" class="px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition">Bar</button>
+                            <button onclick="switchChartType('trend')" id="btnChartTrend" class="px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition">Trend</button>
+                        </div>
+                    </div>
+
+                    <div class="relative w-full h-64 flex items-center justify-center">
+                        <canvas id="bbsChartCanvas"></canvas>
+                    </div>
+                    <p id="chartHelperText" class="text-[11px] text-center text-slate-500 mt-2">
+                        Visualizing individual item performance (0 to 4 scale) across all 14 tasks.
+                    </p>
+                </div>
+
+                <!-- Saved Assessments History Card -->
+                <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-clinical-600"></i>
+                            <span>Saved History</span>
+                            <span id="historyCountBadge" class="bg-slate-100 text-slate-700 text-xs px-2 py-0.5 rounded-full font-semibold">0</span>
+                        </h3>
+                        <button onclick="clearHistoryModal()" class="text-xs text-rose-600 hover:text-rose-700 font-medium">Clear All</button>
+                    </div>
+
+                    <div id="historyListContainer" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                        <!-- Dynamically populated from localStorage -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+            <div>
+                <strong>Berg Balance Scale (BBS)</strong> — Standard 14-item objective measure of static and dynamic balance abilities.
+            </div>
+            <div>
+                Reference: Berg K, Wood-Dauphinee S, Williams JI, Maki B. <em>Can J Public Health.</em> 1992;83 Suppl 2:S7-11.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Banner -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none no-print">
+        <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center space-x-3 border border-slate-700">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+            <span id="toastMessage" class="text-sm font-medium">Action completed!</span>
+        </div>
+    </div>
+
+    <!-- Equipment & Instructions Modal -->
+    <div id="equipmentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 animate-fadeIn">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-toolbox text-clinical-600"></i>
+                    <span>Required Equipment & General Guidelines</span>
+                </h3>
+                <button onclick="closeEquipmentModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="py-4 space-y-4 text-sm text-slate-700">
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-2">Equipment Needed for Testing:</h4>
+                    <ul class="space-y-1.5 text-xs sm:text-sm">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-600"></i> Stopwatch or watch with a second hand</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-600"></i> Ruler or yardstick (capable of measuring 2, 5, and 10 inches)</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-600"></i> Two standard chairs (one with armrests, one without armrests)</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-600"></i> Footstool or step of average step height</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-600"></i> Slipper or shoe (for Item 9 pick-up task)</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-600"></i> 15 feet of clear walkway space</li>
+                    </ul>
+                </div>
+                <div class="bg-clinical-50 border border-clinical-200 rounded-xl p-3.5 text-xs text-clinical-900 space-y-1.5">
+                    <div class="font-bold uppercase tracking-wider text-clinical-700">General Scoring Direction</div>
+                    <p>Please document each task and/or give instructions as written. When scoring, please record the <strong>lowest response category</strong> that applies for each item.</p>
+                    <p>In most items, the subject is asked to maintain a given position for a specific time. Progressively more points are deducted if the time or distance requirements are not met, if the subject's performance warrants supervision, or if the subject touches an external support or receives assistance from the examiner.</p>
+                </div>
+            </div>
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeEquipmentModal()" class="bg-clinical-600 hover:bg-clinical-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">Got It</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal (for Reset / Clear History) -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+            <div class="flex items-center space-x-3 text-rose-600 mb-3">
+                <div class="bg-rose-100 p-2.5 rounded-full">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <h3 id="confirmModalTitle" class="text-base font-bold text-slate-900">Confirm Action</h3>
+            </div>
+            <p id="confirmModalMessage" class="text-sm text-slate-600 mb-6">Are you sure you want to proceed?</p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition">Cancel</button>
+                <button id="confirmModalActionBtn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        /**
+         * Official 14 Berg Balance Scale Items with exact clinical instructions,
+         * equipment needed, and 0-4 point grading criteria.
+         */
+        const BBS_ITEMS = [
+            {
+                id: 1,
+                title: "Sitting to standing",
+                shortLabel: "1. Sit to Stand",
+                instructions: "Please stand up. Try not to use your hand for support.",
+                equipment: "Chair of standard height",
+                options: [
+                    { score: 4, text: "Able to stand without using hands and stabilize independently" },
+                    { score: 3, text: "Able to stand independently using hands" },
+                    { score: 2, text: "Able to stand using hands after several tries" },
+                    { score: 1, text: "Needs minimal aid to stand or stabilize" },
+                    { score: 0, text: "Needs moderate or maximal assist to stand" }
+                ]
+            },
+            {
+                id: 2,
+                title: "Standing unsupported",
+                shortLabel: "2. Stand Unsupported",
+                instructions: "Please stand for two minutes without holding on.",
+                clinicalNote: "If a subject is able to stand 2 minutes unsupported, score full points for sitting unsupported (Item 3). Proceed to Item 4.",
+                equipment: "Stopwatch",
+                options: [
+                    { score: 4, text: "Able to stand safely for 2 minutes" },
+                    { score: 3, text: "Able to stand 2 minutes with supervision" },
+                    { score: 2, text: "Able to stand 30 seconds unsupported" },
+                    { score: 1, text: "Needs several tries to stand 30 seconds unsupported" },
+                    { score: 0, text: "Unable to stand 30 seconds unsupported" }
+                ]
+            },
+            {
+                id: 3,
+                title: "Sitting with back unsupported but feet supported on floor or on a stool",
+                shortLabel: "3. Sit Unsupported",
+                instructions: "Please sit with arms folded for 2 minutes.",
+                equipment: "Stopwatch, Chair without armrests or bench, Footstool if needed",
+                options: [
+                    { score: 4, text: "Able to sit safely and securely for 2 minutes" },
+                    { score: 3, text: "Able to sit 2 minutes under supervision" },
+                    { score: 2, text: "Able to able to sit 30 seconds" },
+                    { score: 1, text: "Able to sit 10 seconds" },
+                    { score: 0, text: "Unable to sit without support 10 seconds" }
+                ]
+            },
+            {
+                id: 4,
+                title: "Standing to sitting",
+                shortLabel: "4. Stand to Sit",
+                instructions: "Please sit down.",
+                equipment: "Chair",
+                options: [
+                    { score: 4, text: "Sits safely with minimal use of hands" },
+                    { score: 3, text: "Controls descent by using hands" },
+                    { score: 2, text: "Uses back of legs against chair to control descent" },
+                    { score: 1, text: "Sits independently but has uncontrolled descent" },
+                    { score: 0, text: "Needs assist to sit" }
+                ]
+            },
+            {
+                id: 5,
+                title: "Transfers",
+                shortLabel: "5. Transfers",
+                instructions: "Arrange chair(s) for pivot transfer. Ask subject to transfer one way toward a seat with armrests and one way toward a seat without armrests. You may use two chairs (one with and one without armrests) or a bed and a chair.",
+                equipment: "Two chairs (one with armrests, one without) or bed and chair",
+                options: [
+                    { score: 4, text: "Able to transfer safely with minor use of hands" },
+                    { score: 3, text: "Able to transfer safely definite need of hands" },
+                    { score: 2, text: "Able to transfer with verbal cuing and/or supervision" },
+                    { score: 1, text: "Needs one person to assist" },
+                    { score: 0, text: "Needs two people to assist or supervise to be safe" }
+                ]
+            },
+            {
+                id: 6,
+                title: "Standing unsupported with eyes closed",
+                shortLabel: "6. Eyes Closed",
+                instructions: "Please close your eyes and stand still for 10 seconds.",
+                equipment: "Stopwatch",
+                options: [
+                    { score: 4, text: "Able to stand 10 seconds safely" },
+                    { score: 3, text: "Able to stand 10 seconds with supervision" },
+                    { score: 2, text: "Able to stand 3 seconds" },
+                    { score: 1, text: "Unable to keep eyes closed 3 seconds but stays steady" },
+                    { score: 0, text: "Needs help to keep from falling" }
+                ]
+            },
+            {
+                id: 7,
+                title: "Standing unsupported with feet together",
+                shortLabel: "7. Feet Together",
+                instructions: "Place your feet together and stand without holding on.",
+                equipment: "Stopwatch",
+                options: [
+                    { score: 4, text: "Able to place feet together independently and stand 1 minute safely" },
+                    { score: 3, text: "Able to place feet together independently and stand 1 minute with supervision" },
+                    { score: 2, text: "Able to place feet together independently but unable to hold for 30 seconds" },
+                    { score: 1, text: "Needs help to attain position but able to stand 15 seconds feet together" },
+                    { score: 0, text: "Needs help to attain position and unable to hold for 15 seconds" }
+                ]
+            },
+            {
+                id: 8,
+                title: "Reaching forward with outstretched arm while standing",
+                shortLabel: "8. Reach Forward",
+                instructions: "Lift arm to 90 degrees. Stretch out your fingers and reach forward as far as you can. (Examiner places a ruler at the end of fingertips when arm is at 90 degrees. Fingers should not touch the ruler while reaching forward. The recorded measure is the distance forward that the fingers reach while the subject is in the most forward lean position. When possible, ask subject to use both arms when reaching to avoid rotation of the trunk.)",
+                equipment: "Ruler / Yardstick",
+                options: [
+                    { score: 4, text: "Can reach forward confidently > 25 cm (10 inches)" },
+                    { score: 3, text: "Can reach forward > 12.5 cm (5 inches) safely" },
+                    { score: 2, text: "Can reach forward > 5 cm (2 inches) safely" },
+                    { score: 1, text: "Reaches forward but needs supervision" },
+                    { score: 0, text: "Loses balance while trying / requires external support" }
+                ]
+            },
+            {
+                id: 9,
+                title: "Pick up object from the floor from a standing position",
+                shortLabel: "9. Pick Up Object",
+                instructions: "Pick up the shoe/slipper, which is placed in front of your feet.",
+                equipment: "Shoe or slipper",
+                options: [
+                    { score: 4, text: "Able to pick up slipper safely and easily" },
+                    { score: 3, text: "Able to pick up slipper but needs supervision" },
+                    { score: 2, text: "Unable to pick up but reaches 2–5 cm (1–2 inches) from slipper and keeps balance independently" },
+                    { score: 1, text: "Unable to pick up and needs supervision while trying" },
+                    { score: 0, text: "Unable to try / needs assist to keep from losing balance or falling" }
+                ]
+            },
+            {
+                id: 10,
+                title: "Turning to look behind over left and right shoulders while standing",
+                shortLabel: "10. Look Behind",
+                instructions: "Turn to look directly behind you over toward the left shoulder. Repeat to the right. (Examiner may pick an object to look at directly behind the subject to encourage a better twist turn.)",
+                equipment: "None",
+                options: [
+                    { score: 4, text: "Looks behind from both sides and weight shifts well" },
+                    { score: 3, text: "Looks behind one side only; other side shows less weight shift" },
+                    { score: 2, text: "Turns sideways only but maintains balance" },
+                    { score: 1, text: "Needs supervision when turning" },
+                    { score: 0, text: "Needs assist to keep from losing balance or falling" }
+                ]
+            },
+            {
+                id: 11,
+                title: "Turn 360 degrees",
+                shortLabel: "11. Turn 360°",
+                instructions: "Turn completely around in a full circle. Pause. Then turn a full circle in the other direction.",
+                equipment: "Stopwatch",
+                options: [
+                    { score: 4, text: "Able to turn 360 degrees safely in 4 seconds or less" },
+                    { score: 3, text: "Able to turn 360 degrees safely one side only in 4 seconds or less" },
+                    { score: 2, text: "Able to turn 360 degrees safely but slowly" },
+                    { score: 1, text: "Needs close supervision or verbal cuing" },
+                    { score: 0, text: "Needs assistance while turning" }
+                ]
+            },
+            {
+                id: 12,
+                title: "Place alternate foot on step or stool while standing unsupported",
+                shortLabel: "12. Alternate Step",
+                instructions: "Place each foot alternately on the step/stool. Continue until each foot has touched the step/stool four times.",
+                equipment: "Step or stool, Stopwatch",
+                options: [
+                    { score: 4, text: "Able to stand independently and safely and complete 8 steps in 20 seconds" },
+                    { score: 3, text: "Able to stand independently and complete 8 steps in > 20 seconds" },
+                    { score: 2, text: "Able to complete 4 steps without aid with supervision" },
+                    { score: 1, text: "Able to complete > 2 steps needs minimal assist" },
+                    { score: 0, text: "Needs assistance to keep from falling / unable to try" }
+                ]
+            },
+            {
+                id: 13,
+                title: "Standing unsupported one foot in front",
+                shortLabel: "13. Tandem Stand",
+                instructions: "Place one foot directly in front of the other. If you feel that you cannot place your foot directly in front, try to step far enough ahead that the heel of your forward foot is ahead of the toes of the other foot. (To score 3 points, the length of the step should exceed the length of the other foot and the width of the stance should approximate the subject's normal stride width.)",
+                equipment: "Stopwatch",
+                options: [
+                    { score: 4, text: "Able to place foot tandem independently and hold 30 seconds" },
+                    { score: 3, text: "Able to place foot ahead independently and hold 30 seconds" },
+                    { score: 2, text: "Able to take small step independently and hold 30 seconds" },
+                    { score: 1, text: "Needs help to step but can hold 15 seconds" },
+                    { score: 0, text: "Loses balance while stepping or standing" }
+                ]
+            },
+            {
+                id: 14,
+                title: "Standing on one leg",
+                shortLabel: "14. Single Leg Stand",
+                instructions: "Stand on one leg as long as you can without holding on.",
+                equipment: "Stopwatch",
+                options: [
+                    { score: 4, text: "Able to lift leg independently and hold > 10 seconds" },
+                    { score: 3, text: "Able to lift leg independently and hold 5–10 seconds" },
+                    { score: 2, text: "Able to lift leg independently and hold ≥ 3 seconds" },
+                    { score: 1, text: "Tries to lift leg, unable to hold 3 seconds but remains standing independently" },
+                    { score: 0, text: "Unable to try or needs assist to prevent fall" }
+                ]
+            }
+        ];
+
+        // Application State
+        let currentScores = {}; // { itemId: score (0-4) }
+        let currentFilter = 'all'; // 'all' | 'unanswered'
+        let activeChartType = 'radar'; // 'radar' | 'bar' | 'trend'
+        let chartInstance = null;
+        const STORAGE_KEY_HISTORY = 'bbs_clinical_history_v1';
+        const STORAGE_KEY_DRAFT = 'bbs_clinical_draft_v1';
+
+        // Initialize on Window Load
+        window.onload = function () {
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('assessmentDate').value = today;
+
+            populateQuickJump();
+            loadDraftState();
+            renderAssessmentItems();
+            initChart();
+            updateAllCalculations();
+            renderHistoryList();
+            syncMetadata();
+        };
+
+        // Populate Quick Jump Dropdown
+        function populateQuickJump() {
+            const select = document.getElementById('quickJumpSelect');
+            BBS_ITEMS.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.textContent = `Item ${item.id}: ${item.title}`;
+                select.appendChild(opt);
+            });
+        }
+
+        function jumpToItem(itemId) {
+            if (!itemId) return;
+            const el = document.getElementById(`bbs-item-card-${itemId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('ring-2', 'ring-clinical-500');
+                setTimeout(() => el.classList.remove('ring-2', 'ring-clinical-500'), 1800);
+            }
+            document.getElementById('quickJumpSelect').value = "";
+        }
+
+        // Render the 14 BBS items
+        function renderAssessmentItems() {
+            const container = document.getElementById('bbsItemsContainer');
+            container.innerHTML = '';
+
+            BBS_ITEMS.forEach(item => {
+                const selectedScore = currentScores[item.id];
+                const isScored = selectedScore !== undefined;
+
+                // Filter check
+                if (currentFilter === 'unanswered' && isScored) {
+                    return;
+                }
+
+                const card = document.createElement('div');
+                card.id = `bbs-item-card-${item.id}`;
+                card.className = `assessment-item-card bg-white rounded-2xl shadow-sm border ${isScored ? 'border-clinical-200' : 'border-slate-200'} p-5 transition print-break-inside-avoid`;
+
+                // Build Score Badge
+                const badgeHTML = isScored
+                    ? `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-clinical-100 text-clinical-800 border border-clinical-200">
+                         <i class="fa-solid fa-check-circle text-clinical-600 mr-1.5"></i>Score: ${selectedScore} / 4
+                       </span>`
+                    : `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
+                         Not Scored
+                       </span>`;
+
+                // Optional Item 2 Clinical Skip Shortcut note
+                let clinicalNoteHTML = '';
+                if (item.clinicalNote) {
+                    clinicalNoteHTML = `
+                        <div class="mt-2.5 p-2.5 rounded-xl bg-sky-50 border border-sky-200 text-xs text-sky-900 flex flex-wrap items-center justify-between gap-2">
+                            <div><i class="fa-solid fa-lightbulb text-sky-600 mr-1.5"></i><strong>Clinical Rule:</strong> ${item.clinicalNote}</div>
+                            ${selectedScore === 4 && currentScores[3] !== 4 ? `
+                                <button onclick="applyItem2Rule()" class="no-print bg-sky-600 hover:bg-sky-700 text-white px-2.5 py-1 rounded-lg font-semibold text-xs transition shrink-0">
+                                    Auto-Score Item 3 as 4 pts
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+
+                // Options HTML
+                const optionsHTML = item.options.map(opt => {
+                    const isThisSelected = selectedScore === opt.score;
+                    return `
+                        <label onclick="selectItemScore(${item.id}, ${opt.score})" 
+                               class="option-card cursor-pointer flex items-start p-3 rounded-xl border ${isThisSelected ? 'selected border-clinical-600 bg-sky-50/80' : 'border-slate-200 bg-white'}">
+                            <input type="radio" name="bbs_item_${item.id}" value="${opt.score}" ${isThisSelected ? 'checked' : ''} class="sr-only">
+                            <div class="flex items-center justify-center w-7 h-7 rounded-lg font-bold text-xs shrink-0 mr-3 mt-0.5 ${isThisSelected ? 'bg-clinical-600 text-white' : 'bg-slate-100 text-slate-700'}">
+                                ${opt.score}
+                            </div>
+                            <div class="text-xs sm:text-sm ${isThisSelected ? 'font-semibold text-slate-900' : 'text-slate-700'} leading-snug">
+                                ${opt.text}
+                            </div>
+                        </label>
+                    `;
+                }).join('');
+
+                card.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-start gap-2 pb-3 border-b border-slate-100">
+                        <div class="flex items-center space-x-2.5">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-xl bg-clinical-800 text-white font-bold text-sm shrink-0">
+                                ${item.id}
+                            </span>
+                            <div>
+                                <h3 class="text-base font-bold text-slate-900">${item.title}</h3>
+                                <span class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                    <i class="fa-solid fa-screwdriver-wrench text-slate-400"></i> Equipment: ${item.equipment}
+                                </span>
+                            </div>
+                        </div>
+                        <div>${badgeHTML}</div>
+                    </div>
+
+                    <div class="my-3 bg-slate-50 p-3 rounded-xl border border-slate-200/70 text-xs sm:text-sm text-slate-700">
+                        <strong class="text-slate-900 uppercase text-[11px] tracking-wider block mb-0.5">Instructions to Patient:</strong>
+                        "${item.instructions}"
+                    </div>
+
+                    ${clinicalNoteHTML}
+
+                    <div class="mt-3 space-y-2">
+                        ${optionsHTML}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            if (container.children.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-200">
+                        <i class="fa-solid fa-circle-check text-emerald-500 text-3xl mb-2"></i>
+                        <h3 class="text-base font-bold text-slate-800">All 14 Items Scored!</h3>
+                        <p class="text-xs text-slate-500 mt-1">Switch filter back to "All Items (14)" to review or modify any response.</p>
+                        <button onclick="setItemFilter('all')" class="mt-4 bg-clinical-600 text-white px-4 py-2 rounded-xl text-xs font-semibold">Show All 14 Items</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Select score for an item
+        function selectItemScore(itemId, score) {
+            currentScores[itemId] = score;
+            saveDraftState();
+            renderAssessmentItems();
+            updateAllCalculations();
+        }
+
+        // Clinical Shortcut for Item 2 -> Item 3
+        function applyItem2Rule() {
+            currentScores[3] = 4;
+            saveDraftState();
+            renderAssessmentItems();
+            updateAllCalculations();
+            showToast("Item 3 automatically scored 4/4 per clinical instructions.");
+        }
+
+        // Filter items view
+        function setItemFilter(filterType) {
+            currentFilter = filterType;
+            const allBtn = document.getElementById('filterAllBtn');
+            const unBtn = document.getElementById('filterUnansweredBtn');
+
+            if (filterType === 'all') {
+                allBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-clinical-600 text-white transition";
+                unBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+            } else {
+                unBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-clinical-600 text-white transition";
+                allBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+            }
+            renderAssessmentItems();
+        }
+
+        // Calculate Total Score, Completion, and Risk Level
+        function getAssessmentSummary() {
+            const scoredKeys = Object.keys(currentScores);
+            const completedCount = scoredKeys.length;
+            const totalScore = scoredKeys.reduce((acc, key) => acc + currentScores[key], 0);
+            const percentage = Math.round((totalScore / 56) * 100);
+
+            let riskLevel = "";
+            let riskDescription = "";
+            let colorClass = "";
+            let badgeColor = "";
+
+            if (completedCount === 0) {
+                riskLevel = "Awaiting Scores";
+                riskDescription = "Select grading criteria across the 14 items to view real-time clinical fall risk interpretation.";
+                colorClass = "slate";
+            } else if (totalScore >= 41) {
+                riskLevel = "Low Fall Risk (Independent)";
+                riskDescription = "Score 41–56: Patient is generally considered independent in functional balance tasks.";
+                colorClass = "emerald";
+            } else if (totalScore >= 21) {
+                riskLevel = "Medium Fall Risk (Walking with Assistance)";
+                riskDescription = "Score 21–40: Indicates moderate balance impairment; patient typically walks with assistive device or supervision.";
+                colorClass = "amber";
+            } else {
+                riskLevel = "High Fall Risk (Wheelchair Bound)";
+                riskDescription = "Score 0–20: Severe balance impairment; high risk for falls. Wheelchair mobility is typically indicated.";
+                colorClass = "rose";
+            }
+
+            return {
+                totalScore,
+                completedCount,
+                percentage,
+                riskLevel,
+                riskDescription,
+                colorClass,
+                belowCutoff45: totalScore < 45
+            };
+        }
+
+        // Update UI elements & Charts
+        function updateAllCalculations() {
+            const summary = getAssessmentSummary();
+
+            // Navbar & Progress bar
+            document.getElementById('navScoreDisplay').textContent = `${summary.totalScore} / 56`;
+            document.getElementById('navProgressDisplay').textContent = `${summary.completedCount} / 14`;
+            document.getElementById('topProgressBar').style.width = `${(summary.completedCount / 14) * 100}%`;
+
+            // Sticky Summary Card
+            document.getElementById('summaryTotalScore').textContent = summary.totalScore;
+            document.getElementById('summaryPercentage').textContent = `${summary.percentage}%`;
+
+            const compBadge = document.getElementById('summaryCompletionBadge');
+            compBadge.textContent = `${summary.completedCount} of 14 Scored`;
+            if (summary.completedCount === 14) {
+                compBadge.className = "inline-block mt-1 px-2.5 py-1 rounded-lg bg-emerald-400/20 border border-emerald-300/40 text-emerald-200 text-xs font-bold";
+            } else {
+                compBadge.className = "inline-block mt-1 px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-300/40 text-amber-200 text-xs font-bold";
+            }
+
+            // Score Gauge
+            const gauge = document.getElementById('scoreGaugeBar');
+            gauge.style.width = `${summary.percentage}%`;
+            if (summary.totalScore >= 41) {
+                gauge.className = "h-full rounded-full bg-emerald-400 transition-all duration-300";
+            } else if (summary.totalScore >= 21) {
+                gauge.className = "h-full rounded-full bg-amber-400 transition-all duration-300";
+            } else {
+                gauge.className = "h-full rounded-full bg-rose-500 transition-all duration-300";
+            }
+
+            // Risk Interpretation Box
+            const riskBox = document.getElementById('riskInterpretationBox');
+            const riskIcon = document.getElementById('riskIcon');
+            const riskTitle = document.getElementById('riskTitle');
+            const riskDesc = document.getElementById('riskDescription');
+
+            riskTitle.textContent = summary.riskLevel;
+            riskDesc.textContent = summary.riskDescription;
+
+            if (summary.colorClass === 'emerald') {
+                riskBox.className = "p-3.5 rounded-xl border bg-emerald-50 border-emerald-200";
+                riskIcon.className = "fa-solid fa-shield-heart text-emerald-600 text-xl";
+                riskTitle.className = "font-bold text-sm text-emerald-950";
+                riskDesc.className = "text-xs text-emerald-800 mt-0.5";
+            } else if (summary.colorClass === 'amber') {
+                riskBox.className = "p-3.5 rounded-xl border bg-amber-50 border-amber-200";
+                riskIcon.className = "fa-solid fa-person-walking-with-cane text-amber-600 text-xl";
+                riskTitle.className = "font-bold text-sm text-amber-950";
+                riskDesc.className = "text-xs text-amber-800 mt-0.5";
+            } else if (summary.colorClass === 'rose') {
+                riskBox.className = "p-3.5 rounded-xl border bg-rose-50 border-rose-200";
+                riskIcon.className = "fa-solid fa-wheelchair text-rose-600 text-xl";
+                riskTitle.className = "font-bold text-sm text-rose-950";
+                riskDesc.className = "text-xs text-rose-800 mt-0.5";
+            } else {
+                riskBox.className = "p-3.5 rounded-xl border bg-slate-50 border-slate-200";
+                riskIcon.className = "fa-solid fa-hourglass-half text-slate-500 text-lg";
+                riskTitle.className = "font-bold text-sm text-slate-800";
+                riskDesc.className = "text-xs text-slate-600 mt-0.5";
+            }
+
+            // Print Header Sync
+            document.getElementById('printTotalScore').textContent = `${summary.totalScore} / 56 (${summary.percentage}%)`;
+            document.getElementById('printRiskCategory').textContent = `${summary.riskLevel} (${summary.completedCount}/14 items)`;
+
+            updateChartData();
+        }
+
+        // Sync Patient Metadata with Print Header & Draft Storage
+        function syncMetadata() {
+            const name = document.getElementById('patientName').value.trim();
+            const date = document.getElementById('assessmentDate').value;
+            const clinician = document.getElementById('clinicianName').value.trim();
+            const notes = document.getElementById('clinicalNotes').value.trim();
+
+            document.getElementById('printPatientName').textContent = name || 'Not Specified';
+            document.getElementById('printAssessmentDate').textContent = date || 'Not Specified';
+            document.getElementById('printClinicianName').textContent = clinician || 'Not Specified';
+            document.getElementById('printClinicalNotes').textContent = notes || 'None';
+
+            saveDraftState();
+        }
+
+        // Initialize Chart.js
+        function initChart() {
+            const ctx = document.getElementById('bbsChartCanvas').getContext('2d');
+            chartInstance = new Chart(ctx, getChartConfig(activeChartType));
+        }
+
+        function switchChartType(type) {
+            activeChartType = type;
+            ['radar', 'bar', 'trend'].forEach(t => {
+                const btn = document.getElementById(`btnChart${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                if (t === type) {
+                    btn.className = "px-2.5 py-1 rounded-md font-semibold bg-white text-clinical-700 shadow-sm transition";
+                } else {
+                    btn.className = "px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition";
+                }
+            });
+
+            const helper = document.getElementById('chartHelperText');
+            if (type === 'trend') {
+                helper.textContent = "Historical total score progression (out of 56) across saved assessments.";
+            } else {
+                helper.textContent = "Visualizing individual item performance (0 to 4 scale) across all 14 tasks.";
+            }
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            const ctx = document.getElementById('bbsChartCanvas').getContext('2d');
+            chartInstance = new Chart(ctx, getChartConfig(activeChartType));
+        }
+
+        function getChartConfig(type) {
+            if (type === 'trend') {
+                const history = getSavedHistory();
+                const labels = history.map((h, i) => h.date || `Eval #${i + 1}`);
+                const dataPoints = history.map(h => h.totalScore);
+
+                // Include current live score if any items are scored
+                const summary = getAssessmentSummary();
+                if (summary.completedCount > 0) {
+                    labels.push("Current");
+                    dataPoints.push(summary.totalScore);
+                }
+
+                return {
+                    type: 'line',
+                    data: {
+                        labels: labels.length ? labels : ['No Data'],
+                        datasets: [{
+                            label: 'Total BBS Score (/56)',
+                            data: dataPoints.length ? dataPoints : [0],
+                            borderColor: '#0284c7',
+                            backgroundColor: 'rgba(2, 132, 199, 0.15)',
+                            borderWidth: 2.5,
+                            pointBackgroundColor: '#0369a1',
+                            pointRadius: 4,
+                            fill: true,
+                            tension: 0.25
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                min: 0,
+                                max: 56,
+                                ticks: { stepSize: 14 }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                };
+            }
+
+            const itemLabels = BBS_ITEMS.map(item => `I${item.id}`);
+            const itemValues = BBS_ITEMS.map(item => currentScores[item.id] !== undefined ? currentScores[item.id] : 0);
+
+            if (type === 'bar') {
+                return {
+                    type: 'bar',
+                    data: {
+                        labels: itemLabels,
+                        datasets: [{
+                            label: 'Item Score (0-4)',
+                            data: itemValues,
+                            backgroundColor: itemValues.map(v => v >= 3 ? '#10b981' : (v >= 2 ? '#f59e0b' : '#f43f5e')),
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                min: 0,
+                                max: 4,
+                                ticks: { stepSize: 1 }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    title: (items) => {
+                                        const idx = items[0].dataIndex;
+                                        return BBS_ITEMS[idx].shortLabel;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+            }
+
+            // Default: Radar
+            return {
+                type: 'radar',
+                data: {
+                    labels: itemLabels,
+                    datasets: [{
+                        label: 'Score (0-4)',
+                        data: itemValues,
+                        backgroundColor: 'rgba(2, 132, 199, 0.2)',
+                        borderColor: '#0284c7',
+                        pointBackgroundColor: '#0369a1',
+                        pointBorderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 4,
+                            ticks: { stepSize: 1, display: false },
+                            pointLabels: {
+                                font: { size: 10, weight: '600' }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => {
+                                    const idx = items[0].dataIndex;
+                                    return BBS_ITEMS[idx].shortLabel;
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+        }
+
+        function updateChartData() {
+            if (!chartInstance) return;
+            switchChartType(activeChartType);
+        }
+
+        // LocalStorage Draft Management
+        function saveDraftState() {
+            try {
+                const draft = {
+                    patientName: document.getElementById('patientName').value,
+                    assessmentDate: document.getElementById('assessmentDate').value,
+                    clinicianName: document.getElementById('clinicianName').value,
+                    clinicalNotes: document.getElementById('clinicalNotes').value,
+                    scores: currentScores
+                };
+                localStorage.setItem(STORAGE_KEY_DRAFT, JSON.stringify(draft));
+            } catch (e) {
+                console.error("Failed to save draft to localStorage:", e);
+            }
+        }
+
+        function loadDraftState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY_DRAFT);
+                if (!raw) return;
+                const draft = JSON.parse(raw);
+                if (draft.patientName) document.getElementById('patientName').value = draft.patientName;
+                if (draft.assessmentDate) document.getElementById('assessmentDate').value = draft.assessmentDate;
+                if (draft.clinicianName) document.getElementById('clinicianName').value = draft.clinicianName;
+                if (draft.clinicalNotes) document.getElementById('clinicalNotes').value = draft.clinicalNotes;
+                if (draft.scores && typeof draft.scores === 'object') {
+                    currentScores = draft.scores;
+                }
+            } catch (e) {
+                console.error("Failed to load draft state:", e);
+            }
+        }
+
+        // Saved History Management
+        function getSavedHistory() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY_HISTORY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveAssessmentToHistory() {
+            const summary = getAssessmentSummary();
+            if (summary.completedCount === 0) {
+                showToast("Please score at least one item before saving.", "warning");
+                return;
+            }
+
+            const record = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                patientName: document.getElementById('patientName').value.trim() || "Unnamed Patient",
+                date: document.getElementById('assessmentDate').value || new Date().toISOString().split('T')[0],
+                clinician: document.getElementById('clinicianName').value.trim() || "",
+                notes: document.getElementById('clinicalNotes').value.trim() || "",
+                totalScore: summary.totalScore,
+                completedCount: summary.completedCount,
+                riskLevel: summary.riskLevel,
+                scores: { ...currentScores }
+            };
+
+            const history = getSavedHistory();
+            history.push(record);
+            localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
+
+            renderHistoryList();
+            updateChartData();
+            showToast(`Saved assessment (${record.totalScore}/56) to history!`);
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('historyListContainer');
+            const badge = document.getElementById('historyCountBadge');
+            const history = getSavedHistory();
+            badge.textContent = history.length;
+
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-6 text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
+                        No saved assessments yet. Click "Save Assessment to History" to track patient progress over time.
+                    </div>
+                `;
+                return;
+            }
+
+            // Show newest first
+            const reversed = [...history].reverse();
+            container.innerHTML = reversed.map(entry => {
+                let badgeClass = "bg-rose-100 text-rose-800";
+                if (entry.totalScore >= 41) badgeClass = "bg-emerald-100 text-emerald-800";
+                else if (entry.totalScore >= 21) badgeClass = "bg-amber-100 text-amber-800";
+
+                return `
+                    <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white transition flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-xs text-slate-900 truncate">${escapeHTML(entry.patientName)}</span>
+                                <span class="text-[11px] text-slate-400">• ${escapeHTML(entry.date)}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-500 truncate mt-0.5">
+                                ${entry.completedCount}/14 items ${entry.notes ? `• ${escapeHTML(entry.notes)}` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-1.5 shrink-0">
+                            <span class="px-2 py-0.5 rounded-md font-bold text-xs ${badgeClass}">
+                                ${entry.totalScore}/56
+                            </span>
+                            <button onclick="loadHistoryEntry(${entry.id})" class="p-1.5 text-clinical-600 hover:bg-clinical-50 rounded-lg text-xs" title="Load Assessment">
+                                <i class="fa-solid fa-upload"></i>
+                            </button>
+                            <button onclick="deleteHistoryEntry(${entry.id})" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg text-xs" title="Delete Entry">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function loadHistoryEntry(id) {
+            const history = getSavedHistory();
+            const entry = history.find(h => h.id === id);
+            if (!entry) return;
+
+            document.getElementById('patientName').value = entry.patientName || '';
+            document.getElementById('assessmentDate').value = entry.date || '';
+            document.getElementById('clinicianName').value = entry.clinician || '';
+            document.getElementById('clinicalNotes').value = entry.notes || '';
+            currentScores = { ...(entry.scores || {}) };
+
+            syncMetadata();
+            renderAssessmentItems();
+            updateAllCalculations();
+            showToast(`Loaded assessment from ${entry.date}`);
+        }
+
+        function deleteHistoryEntry(id) {
+            const history = getSavedHistory().filter(h => h.id !== id);
+            localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
+            renderHistoryList();
+            updateChartData();
+            showToast("Removed entry from history.");
+        }
+
+        // Copy Formatted Clinical Note to Clipboard
+        function copyClinicalSummary() {
+            const summary = getAssessmentSummary();
+            const name = document.getElementById('patientName').value.trim() || 'N/A';
+            const date = document.getElementById('assessmentDate').value || 'N/A';
+            const clinician = document.getElementById('clinicianName').value.trim() || 'N/A';
+            const notes = document.getElementById('clinicalNotes').value.trim() || 'None';
+
+            let lines = [
+                `BERG BALANCE SCALE (BBS) ASSESSMENT SUMMARY`,
+                `===========================================`,
+                `Patient Name/ID: ${name}`,
+                `Date: ${date}`,
+                `Clinician: ${clinician}`,
+                `Notes: ${notes}`,
+                `-------------------------------------------`,
+                `TOTAL SCORE: ${summary.totalScore} / 56 (${summary.percentage}%)`,
+                `Items Completed: ${summary.completedCount} / 14`,
+                `Clinical Fall Risk: ${summary.riskLevel}`,
+                `Multiple Falls Cutoff (<45): ${summary.belowCutoff45 ? 'YES - Increased risk (<45/56)' : 'NO - Above 45/56 threshold'}`,
+                `-------------------------------------------`,
+                `ITEM BREAKDOWN:`
+            ];
+
+            BBS_ITEMS.forEach(item => {
+                const sc = currentScores[item.id];
+                const scText = sc !== undefined ? `${sc}/4` : `Not Scored`;
+                lines.push(`${item.id}. ${item.title}: ${scText}`);
+            });
+
+            const textToCopy = lines.join('\n');
+
+            // Copy using fallback-safe textarea method
+            const textArea = document.createElement("textarea");
+            textArea.value = textToCopy;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast("Clinical summary copied to clipboard!");
+            } catch (err) {
+                showToast("Unable to copy to clipboard.", "warning");
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // Export Current Assessment & History as CSV
+        function exportCurrentCSV() {
+            const summary = getAssessmentSummary();
+            const name = document.getElementById('patientName').value.trim() || 'Unnamed Patient';
+            const date = document.getElementById('assessmentDate').value || new Date().toISOString().split('T')[0];
+            const clinician = document.getElementById('clinicianName').value.trim() || '';
+            const notes = document.getElementById('clinicalNotes').value.trim() || '';
+
+            const headers = [
+                "Patient Name/ID",
+                "Assessment Date",
+                "Clinician",
+                "Notes",
+                "Total Score (/56)",
+                "Items Scored (/14)",
+                "Risk Interpretation",
+                ...BBS_ITEMS.map(i => `Item ${i.id}: ${i.shortLabel}`)
+            ];
+
+            const currentRow = [
+                name,
+                date,
+                clinician,
+                notes,
+                summary.totalScore,
+                summary.completedCount,
+                summary.riskLevel,
+                ...BBS_ITEMS.map(i => currentScores[i.id] !== undefined ? currentScores[i.id] : "")
+            ];
+
+            const history = getSavedHistory();
+            const historyRows = history.map(h => [
+                h.patientName,
+                h.date,
+                h.clinician,
+                h.notes,
+                h.totalScore,
+                h.completedCount,
+                h.riskLevel,
+                ...BBS_ITEMS.map(i => (h.scores && h.scores[i.id] !== undefined) ? h.scores[i.id] : "")
+            ]);
+
+            const allRows = [headers, currentRow, ...historyRows];
+            const csvContent = allRows.map(row =>
+                row.map(field => `"${String(field ?? '').replace(/"/g, '""')}"`).join(',')
+            ).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Berg_Balance_Scale_${date}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast("CSV exported successfully!");
+        }
+
+        // Modals & Notification Helpers
+        function openEquipmentModal() {
+            const modal = document.getElementById('equipmentModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeEquipmentModal() {
+            const modal = document.getElementById('equipmentModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function openResetModal() {
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmModalTitle').textContent = "Reset Current Assessment";
+            document.getElementById('confirmModalMessage').textContent = "Are you sure you want to clear all 14 item scores and reset the current form? Saved history entries will not be deleted.";
+            const btn = document.getElementById('confirmModalActionBtn');
+            btn.onclick = function () {
+                currentScores = {};
+                document.getElementById('patientName').value = '';
+                document.getElementById('clinicalNotes').value = '';
+                document.getElementById('assessmentDate').value = new Date().toISOString().split('T')[0];
+                saveDraftState();
+                renderAssessmentItems();
+                updateAllCalculations();
+                syncMetadata();
+                closeConfirmModal();
+                showToast("Assessment form reset.");
+            };
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function clearHistoryModal() {
+            const history = getSavedHistory();
+            if (history.length === 0) {
+                showToast("History is already empty.", "warning");
+                return;
+            }
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmModalTitle').textContent = "Clear All Saved History";
+            document.getElementById('confirmModalMessage').textContent = "This will permanently remove all saved historical assessments from this browser. Continue?";
+            const btn = document.getElementById('confirmModalActionBtn');
+            btn.onclick = function () {
+                localStorage.removeItem(STORAGE_KEY_HISTORY);
+                renderHistoryList();
+                updateChartData();
+                closeConfirmModal();
+                showToast("Cleared all saved history.");
+            };
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirmModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        let toastTimeout;
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toastNotification');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+
+            msg.textContent = message;
+            if (type === "warning") {
+                icon.className = "fa-solid fa-circle-exclamation text-amber-400 text-lg";
+            } else {
+                icon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3200);
+        }
+
+        function escapeHTML(str) {
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
